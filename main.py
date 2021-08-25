@@ -81,33 +81,6 @@ async def get_main_menu(message: types.Message):
     await message.answer(Main_plus.send_message())
 
 
-@dp.message_handler()
-async def add_doing(message: types.Message):
-    """Добавляет новый расход/доход"""
-    view = message.text
-    if view[-1::] == "-":
-        try:
-            expense = expenses.add_expense(message.text)
-        except exceptions.NotCorrectMessage as e:
-            await message.answer(str(e))
-            return
-        answer_message = (
-            f"Добавлены траты {expense.amount} руб на {expense.category_name}.\n\n"
-            f"{expenses.get_today_statistics()}")
-        await message.answer(answer_message)
-    else:
-        try:
-            profit = profits.add_profit(message.text)
-        except exceptions.NotCorrectMessage as e:
-            await message.answer(str(e))
-            return
-        answer_message = (
-            f"Добавлены прибыль {profit.profit} руб на {profit.category_name}.\n\n"
-            f"{profits.get_today_statistics()}")
-        await message.answer(answer_message)
-    print("Запустил add_expense!")
-
-
 @dp.message_handler(lambda message: message.text.startswith('/del'))
 async def del_expense(message: types.Message):
     """Удаляет одну запись о расходе по её идентификатору"""
@@ -195,6 +168,34 @@ async def list_expenses(message: types.Message):
     answer_message = "Последние сохранённые траты:\n\n* " + "\n\n* " \
         .join(last_profits_rows)
     await message.answer(answer_message)
+
+
+@dp.message_handler()
+async def add_doing(message: types.Message):
+    """Добавляет новый расход/доход"""
+    view = message.text
+    if view[-1::] == "-":
+        try:
+            expense = expenses.add_expense(message.text)
+        except exceptions.NotCorrectMessage as e:
+            await message.answer(str(e))
+            return
+        answer_message = (
+            f"Добавлены траты {expense.amount} руб на {expense.category_name}.\n\n"
+            f"{expenses.get_today_statistics()}")
+        await message.answer(answer_message)
+    else:
+        try:
+            profit = profits.add_profit(message.text)
+        except exceptions.NotCorrectMessage as e:
+            await message.answer(str(e))
+            return
+        answer_message = (
+            f"Добавлены прибыль {profit.profit} руб на {profit.category_name}.\n\n"
+            f"{profits.get_today_statistics()}")
+        await message.answer(answer_message)
+    print("Запустил add_expense!")
+
 
 
 if __name__ == '__main__':
