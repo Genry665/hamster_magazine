@@ -84,22 +84,25 @@ async def get_main_menu(message: types.Message):
     await message.answer(Main_plus.send_message())
 
 
+@dp.message_handler(lambda message: message.text.startswith('/udalyl'))
+async def del_profit(message: types.Message):
+    """Удаляет одну запись о доходе по её индентификатору"""
+    print("Удаляю прибыль22222")
+    row_id = int(message.text[7:])
+    profits.delete_profit(row_id)
+    answer_message = 'Как будто и не было...'
+    await message.answer(answer_message)
+
+
 @dp.message_handler(lambda message: message.text.startswith('/del'))
 async def del_expense(message: types.Message):
     """Удаляет одну запись о расходе по её идентификатору"""
+    print("Удаляю убыток1111")
     row_id = int(message.text[4:])
     expenses.delete_expense(row_id)
     answer_message = "Удалил"
     await message.answer(answer_message)
 
-
-@dp.message_handler(lambda message: message.text.startswith('/del'))
-async def del_profit(message: types.Message):
-    """Удаляет одну запись о доходе по её индентификатору"""
-    row_id = int(message.text[4:])
-    profits.delete_profit(row_id)
-    answer_message = 'Как будто и не было...'
-    await message.answer(answer_message)
 
 
 @dp.message_handler(commands=['categories'])
@@ -166,9 +169,9 @@ async def list_expenses(message: types.Message):
         return
     last_profits_rows = [
         f"{profit.profit} руб. на {profit.category_name} — нажми "
-        f"/del{profit.id} для удаления"
+        f"/udalyl{profit.id} для удаления"
         for profit in last_profits]
-    answer_message = "Последние сохранённые траты:\n\n* " + "\n\n* " \
+    answer_message = "Последние сохранённые прибыли:\n\n* " + "\n\n* " \
         .join(last_profits_rows)
     await message.answer(answer_message)
 

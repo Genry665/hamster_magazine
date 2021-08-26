@@ -99,7 +99,9 @@ def last() -> List[Expense]:
 
 def delete_expense(row_id: int) -> None:
     """Удаляет сообщение по его идентификатору"""
+    print('Собираюсь удалить')
     db.delete("expense", row_id)
+    print('удалить убыток')
 
 
 def _parse_message(raw_message: str) -> Message:

@@ -32,7 +32,9 @@ def add_profit(raw_message: str) -> Profit:
 
 def delete_profit(row_id: int) -> None:
     """Удаляет сообщение по его идентификатору"""
+    print('Собираюсь удалить')
     db.delete("profit", row_id)
+    print("Удалил приьыль")
 
 
 def get_today_statistics() -> str:
@@ -88,8 +90,8 @@ def last() -> List[Profit]:
         "on c.codename=e.category_codename "
         "order by created desc limit 10")
     rows = cursor.fetchall()
-    last_profit = [Profit(id=row[0], profit=row[1], category_name=row[2]) for row in rows]
-    return last_profit
+    last_profits = [Profit(id=row[0], profit=row[1], category_name=row[2]) for row in rows]
+    return last_profits
 
 
 def _get_budget_limit() -> int:
