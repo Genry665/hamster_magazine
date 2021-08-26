@@ -1,12 +1,15 @@
 import logging
-from config import API_TOKEN, Msr_An, Mr_Sir
+from config import API_TOKEN, Msr_An, Mr_Sir, list_expense
 
 from aiogram import Bot, Dispatcher, executor, types
+
+import re
 
 import exceptions
 import expenses
 import profits
 from categories import Categories
+
 
 """ Настроить ведение журнала """
 logging.basicConfig(level=logging.INFO)
@@ -149,7 +152,7 @@ async def today_statistics(message: types.Message):
 
 @dp.message_handler(commands=['month_prof'])
 async def month_statistics(message: types.Message):
-    """Отправляет статистику трат текущего месяца"""
+    """Отправляет статистику пополнений текущего месяца"""
     answer_message = profits.get_month_statistics()
     await message.answer(answer_message)
 
@@ -173,8 +176,9 @@ async def list_expenses(message: types.Message):
 @dp.message_handler()
 async def add_doing(message: types.Message):
     """Добавляет новый расход/доход"""
-    view = message.text
-    if view[-1::] == "-":
+    full_message = re.match(r"([\d ]+) (.*)", message.text)
+    message_category = full_message.group(2).strip().lower()
+    if message_category in list_expense:
         try:
             expense = expenses.add_expense(message.text)
         except exceptions.NotCorrectMessage as e:
@@ -194,8 +198,6 @@ async def add_doing(message: types.Message):
             f"Добавлены прибыль {profit.profit} руб на {profit.category_name}.\n\n"
             f"{profits.get_today_statistics()}")
         await message.answer(answer_message)
-    print("Запустил add_expense!")
-
 
 
 if __name__ == '__main__':

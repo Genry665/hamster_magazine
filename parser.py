@@ -2,6 +2,7 @@ import re
 import exceptions
 
 from typing import NamedTuple
+from config import list_expense
 
 
 class Message(NamedTuple):
@@ -25,13 +26,15 @@ def parse_message(raw_message: str) -> Message or Message1:
             "Не не, пиши так...\n "
             "1500 метро\n"
             "P.S. твой Хомяк :*")
-    if regexp_result.group(2) == "+":
-        profit = regexp_result.group(1).replace(" ", "")
-        category_text = regexp_result.group(2).strip().lower()
-        print(Message1, "555")
-        return Message1(profit=profit, category_text=category_text)
-    else:
+    if regexp_result.group(2) in list_expense:
         amount = regexp_result.group(1).replace(" ", "")
         category_text = regexp_result.group(2).strip().lower()
-        print(Message, "666")
+        print(type(category_text), 'это кат messagw')
+        print(regexp_result.group(2), 'это парсер')
         return Message(amount=amount, category_text=category_text)
+    else:
+        profit = regexp_result.group(1).replace(" ", "")
+        category_text = regexp_result.group(2).strip().lower()
+        print(Message1, "666")
+        print(regexp_result.group(2))
+        return Message1(profit=profit, category_text=category_text)

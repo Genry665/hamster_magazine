@@ -73,7 +73,7 @@ def get_month_statistics() -> str:
                    f"from category where is_base_expense=true)")
     result = cursor.fetchone()
     base_today_profit = result[0] if result[0] else 0
-    return (f"Расходы в текущем месяце:\n"
+    return (f"Прибыль в текущем месяце:\n"
             f"всего — {all_today_profit} руб.\n"
             f"базовые — {base_today_profit} руб. из "
             f"{now.day * _get_budget_limit()} руб.")
