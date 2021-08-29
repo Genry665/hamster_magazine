@@ -44,7 +44,10 @@ def get_today_statistics() -> str:
                    "from expense where date(created)=date('now', 'localtime')")
     result = cursor.fetchone()
     if not result[0]:
-        return "Сегодня ещё нет расходов"
+        return "-------------------------------------------------\n"\
+               "Сегодня ни чего не забирали\n"\
+               "Вы молодец!"\
+               "-------------------------------------------------\n"
     all_today_expenses = result[0]
     cursor.execute("select sum(amount) "
                    "from expense where date(created)=date('now', 'localtime') "
@@ -52,10 +55,9 @@ def get_today_statistics() -> str:
                    "from category where is_base_expense=true)")
     result = cursor.fetchone()
     base_today_expenses = result[0] if result[0] else 0
-    return (f"Расходы сегодня:\n"
-            f"всего — {all_today_expenses} руб.\n"
-            f"базовые — {base_today_expenses} руб. из {db.get_budget()} руб.\n\n"
-            f"За текущий месяц: /month_exp")
+    return ("-------------------------------------------------\n"
+            f"Сегодня вы забрали из норки: {all_today_expenses} руб.\n"
+            "-------------------------------------------------\n")
 
 
 def get_month_statistics() -> str:
@@ -67,7 +69,9 @@ def get_month_statistics() -> str:
                    f"from expense where date(created) >= '{first_day_of_month}'")
     result = cursor.fetchone()
     if not result[0]:
-        return "В этом месяце ещё нет расходов"
+        return "-------------------------------------------------\n"\
+               "Как-то в этом месяце в норку вы не заглядывали..\n"\
+               "-------------------------------------------------\n"
     all_today_expenses = result[0]
     cursor.execute(f"select sum(amount) "
                    f"from expense where date(created) >= '{first_day_of_month}' "
@@ -75,10 +79,10 @@ def get_month_statistics() -> str:
                    f"from category where is_base_expense=true)")
     result = cursor.fetchone()
     base_today_expenses = result[0] if result[0] else 0
-    return (f"Расходы в текущем месяце:\n"
-            f"всего — {all_today_expenses} руб.\n"
-            f"базовые — {base_today_expenses} руб. из "
-            f"{now.day * db.get_budget()} руб.")
+    return ("-------------------------------------------------\n"
+            f"В этом месяце вы забрали из норки: "
+            f"{all_today_expenses} руб.\n"
+            "-------------------------------------------------\n")
 
 
 def last() -> List[Expense]:
@@ -97,3 +101,7 @@ def last() -> List[Expense]:
 def delete_expense(row_id: int) -> None:
     """Удаляет сообщение по его идентификатору"""
     db.delete("expense", row_id)
+
+
+# if __name__ == '__main__':
+#     get_today_statistics()

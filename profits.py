@@ -45,7 +45,9 @@ def get_today_statistics() -> str:
                    "from profit where date(created)=date('now', 'localtime')")
     result = cursor.fetchone()
     if not result[0]:
-        return "Сегодня ещё не было пополнения"
+        return "-------------------------------------------------\n"\
+               "Что-тосегодня пока глухо...\n"\
+               "-------------------------------------------------\n"
     all_today_profits = result[0]
     cursor.execute("select sum(profit) "
                    "from profit where date(created)=date('now', 'localtime') "
@@ -53,10 +55,10 @@ def get_today_statistics() -> str:
                    "from category where is_base_expense=true)")
     result = cursor.fetchone()
     base_today_profits = result[0] if result[0] else 0
-    return (f"Доходы сегодня:\n"
-            f"всего — {all_today_profits} руб.\n"
-            f"Всего заработанно {base_today_profits} руб.\n\n"
-            f"За текущий месяц: /month_prof")
+    return ("-------------------------------------------------\n"
+            f"Сегодня принесли в норку: {all_today_profits} руб.\n"
+            "-------------------------------------------------\n"
+            )
 
 
 def get_month_statistics() -> str:
@@ -68,7 +70,9 @@ def get_month_statistics() -> str:
                    f"from profit where date(created) >= '{first_day_of_month}'")
     result = cursor.fetchone()
     if not result[0]:
-        return "В этом месяце ещё нет доходов"
+        return ("-------------------------------------------------\n"
+                "Пока в норку вы ничего не вносили\n"
+                "-------------------------------------------------\n")
     all_today_profit = result[0]
     cursor.execute(f"select sum(profit) "
                    f"from profit where date(created) >= '{first_day_of_month}' "
@@ -76,10 +80,9 @@ def get_month_statistics() -> str:
                    f"from category where is_base_expense=true)")
     result = cursor.fetchone()
     base_today_profit = result[0] if result[0] else 0
-    return (f"Прибыль в текущем месяце:\n"
-            f"всего — {all_today_profit} руб.\n"
-            f"базовые — {base_today_profit} руб. из "
-            f"{now.day * db.get_budget()} руб.")
+    return ("-------------------------------------------------\n"
+            f"За этот месяц вы принесли в норку: {db.get_budget()} руб.\n"
+            "-------------------------------------------------\n")
 
 
 def last() -> List[Profit]:
