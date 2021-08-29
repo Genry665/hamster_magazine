@@ -1,5 +1,6 @@
 import logging
 from config import API_TOKEN, Msr_An, Mr_Sir, list_expense
+import db
 
 from aiogram import Bot, Dispatcher, executor, types
 
@@ -9,7 +10,6 @@ import exceptions
 import expenses
 import profits
 from categories import Categories
-
 
 """ Настроить ведение журнала """
 logging.basicConfig(level=logging.INFO)
@@ -65,6 +65,7 @@ class MainMenu:
             f"Статистика за месяц: /{self.month}\n"
             f"Последние внесённые {self.rus_names}: /{self.name_category}\n"
             "Категории: /categories\n"
+            "Бюджет: /budget\n"
         )
         return message_menu
 
@@ -97,22 +98,27 @@ async def del_profit(message: types.Message):
 @dp.message_handler(lambda message: message.text.startswith('/del'))
 async def del_expense(message: types.Message):
     """Удаляет одну запись о расходе по её идентификатору"""
-    print("Удаляю убыток1111")
     row_id = int(message.text[4:])
     expenses.delete_expense(row_id)
     answer_message = "Удалил"
     await message.answer(answer_message)
 
 
-
 @dp.message_handler(commands=['categories'])
 async def categories_list(message: types.Message):
     """Отправляет список категорий расходов"""
     categories = Categories().get_all_categories()
-    answer_message = "Категории трат:\n\n* " + \
+    answer_message = "Категории для ввода:\n\n* " + \
                      ("\n* ".join([c.name + ' (' + ", ".join(c.aliases) + ')' for c in categories]))
     await message.answer(answer_message)
-    print(" апустил категории")
+
+
+@dp.message_handler(commands=['budget'])
+async def budget(message: types.Message):
+    """Вывод текущего бюджета"""
+    total_budget = db.get_budget()
+    answer_message = f"Сейчас в норке: {total_budget} рублей"
+    await message.answer(answer_message)
 
 
 @dp.message_handler(commands=['today_expense'])
@@ -180,27 +186,41 @@ async def list_expenses(message: types.Message):
 async def add_doing(message: types.Message):
     """Добавляет новый расход/доход"""
     full_message = re.match(r"([\d ]+) (.*)", message.text)
-    message_category = full_message.group(2).strip().lower()
-    if message_category in list_expense:
-        try:
-            expense = expenses.add_expense(message.text)
-        except exceptions.NotCorrectMessage as e:
-            await message.answer(str(e))
-            return
-        answer_message = (
-            f"Добавлены траты {expense.amount} руб на {expense.category_name}.\n\n"
-            f"{expenses.get_today_statistics()}")
-        await message.answer(answer_message)
-    else:
-        try:
-            profit = profits.add_profit(message.text)
-        except exceptions.NotCorrectMessage as e:
-            await message.answer(str(e))
-            return
-        answer_message = (
-            f"Добавлены прибыль {profit.profit} руб на {profit.category_name}.\n\n"
-            f"{profits.get_today_statistics()}")
-        await message.answer(answer_message)
+    try:
+        message_category = full_message.group(2).strip().lower()
+        if int(full_message.group(1).replace(" ", "")) != 0:
+            if message_category in list_expense:
+                try:
+                    expense = expenses.add_expense(message.text)
+                    min_expense = db.minus_expense(int(full_message.group(1).replace(" ", "")))
+                except exceptions.NotCorrectMessage as e:
+                    await message.answer(str(e))
+                    return
+                answer_message = (
+                    f"Добавлены траты {expense.amount} руб на {expense.category_name}.\n\n"
+                    f"{expenses.get_today_statistics()}")
+                await message.answer(answer_message)
+            else:
+                try:
+                    profit = profits.add_profit(message.text)
+                    add_profit = db.add_profit(int(full_message.group(1).replace(" ", "")))
+                except exceptions.NotCorrectMessage as e:
+                    await message.answer(str(e))
+                    return
+                answer_message = (
+                    f"Добавлены прибыль {profit.profit} руб.\n\n"
+                    f"{profits.get_today_statistics()}")
+                await message.answer(answer_message)
+        else:
+            await message.answer("Совсем не так!\n"
+                                 "Сначала число, потом категория\n"
+                                 "К примеру: 500 коты\n\n"
+                                 "С уважением, твой Хомяк.")
+    except AttributeError:
+        await message.answer("Совсем не так!\n"
+                             "Сначала число, потом категория\n"
+                             "К примеру: 500 коты\n\n"
+                             "С уважением, твой Хомяк.")
 
 
 if __name__ == '__main__':

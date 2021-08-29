@@ -1,9 +1,9 @@
 """Работа с доходами - их добавление, удаление и статистика"""
-from typing import NamedTuple, Optional, List
-from date_time import get_now_datetime, get_now_formatted
-from parser import parse_message
 import db
 from categories import Categories
+from typing import NamedTuple, Optional, List
+
+import parser
 
 
 class Profit(NamedTuple):
@@ -16,18 +16,19 @@ class Profit(NamedTuple):
 def add_profit(raw_message: str) -> Profit:
     """Добавляет новое сообщение.
     Принимает на вход текст сообщения, пришедшего в бот."""
-    parsed_message = parse_message(raw_message)
+    parsed_message = parser.parse_message(raw_message)
     category = Categories().get_category(
         parsed_message.category_text)
     inserted_row_id = db.insert("profit", {
         "profit": parsed_message.profit,
-        "created": get_now_formatted(),
+        "created": parser.get_now_formatted(),
         "category_codename": category.codename,
         "raw_text": raw_message
     })
     return Profit(id=None,
                   profit=parsed_message.profit,
                   category_name=category.name)
+
 
 
 def delete_profit(row_id: int) -> None:
@@ -44,7 +45,7 @@ def get_today_statistics() -> str:
                    "from profit where date(created)=date('now', 'localtime')")
     result = cursor.fetchone()
     if not result[0]:
-        return "Сегодня ещё нет расходов"
+        return "Сегодня ещё не было пополнения"
     all_today_profits = result[0]
     cursor.execute("select sum(profit) "
                    "from profit where date(created)=date('now', 'localtime') "
@@ -54,13 +55,13 @@ def get_today_statistics() -> str:
     base_today_profits = result[0] if result[0] else 0
     return (f"Доходы сегодня:\n"
             f"всего — {all_today_profits} руб.\n"
-            f"базовые — {base_today_profits} руб. из {_get_budget_limit()} руб.\n\n"
-            f"За текущий месяц: /month")
+            f"Всего заработанно {base_today_profits} руб.\n\n"
+            f"За текущий месяц: /month_prof")
 
 
 def get_month_statistics() -> str:
     """Возвращает строкой статистику расходов за текущий месяц"""
-    now = get_now_datetime()
+    now = parser.get_now_datetime()
     first_day_of_month = f'{now.year:04d}-{now.month:02d}-01'
     cursor = db.get_cursor()
     cursor.execute(f"select sum(profit) "
@@ -78,7 +79,7 @@ def get_month_statistics() -> str:
     return (f"Прибыль в текущем месяце:\n"
             f"всего — {all_today_profit} руб.\n"
             f"базовые — {base_today_profit} руб. из "
-            f"{now.day * _get_budget_limit()} руб.")
+            f"{now.day * db.get_budget()} руб.")
 
 
 def last() -> List[Profit]:
@@ -92,8 +93,3 @@ def last() -> List[Profit]:
     rows = cursor.fetchall()
     last_profits = [Profit(id=row[0], profit=row[1], category_name=row[2]) for row in rows]
     return last_profits
-
-
-def _get_budget_limit() -> int:
-    """Возвращает дневной лимит трат для основных базовых трат"""
-    return db.fetchall("budget", ["budget"])
