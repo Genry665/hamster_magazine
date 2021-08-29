@@ -1,7 +1,10 @@
 import logging
-from config import API_TOKEN, Msr_An, Mr_Sir
+from config import API_TOKEN, Msr_An, Mr_Sir, list_expense
+import db
 
 from aiogram import Bot, Dispatcher, executor, types
+
+import re
 
 import exceptions
 import expenses
@@ -62,6 +65,7 @@ class MainMenu:
             f"Статистика за месяц: /{self.month}\n"
             f"Последние внесённые {self.rus_names}: /{self.name_category}\n"
             "Категории: /categories\n"
+            "Бюджет: /budget\n"
         )
         return message_menu
 
@@ -81,6 +85,16 @@ async def get_main_menu(message: types.Message):
     await message.answer(Main_plus.send_message())
 
 
+@dp.message_handler(lambda message: message.text.startswith('/udalyl'))
+async def del_profit(message: types.Message):
+    """Удаляет одну запись о доходе по её индентификатору"""
+    print("Удаляю прибыль22222")
+    row_id = int(message.text[7:])
+    profits.delete_profit(row_id)
+    answer_message = 'Как будто и не было...'
+    await message.answer(answer_message)
+
+
 @dp.message_handler(lambda message: message.text.startswith('/del'))
 async def del_expense(message: types.Message):
     """Удаляет одну запись о расходе по её идентификатору"""
@@ -90,23 +104,21 @@ async def del_expense(message: types.Message):
     await message.answer(answer_message)
 
 
-@dp.message_handler(lambda message: message.text.startswith('/del'))
-async def del_profit(message: types.Message):
-    """Удаляет одну запись о доходе по её индентификатору"""
-    row_id = int(message.text[4:])
-    profits.delete_profit(row_id)
-    answer_message = 'Как будто и не было...'
-    await message.answer(answer_message)
-
-
 @dp.message_handler(commands=['categories'])
 async def categories_list(message: types.Message):
     """Отправляет список категорий расходов"""
     categories = Categories().get_all_categories()
-    answer_message = "Категории трат:\n\n* " + \
+    answer_message = "Категории для ввода:\n\n* " + \
                      ("\n* ".join([c.name + ' (' + ", ".join(c.aliases) + ')' for c in categories]))
     await message.answer(answer_message)
-    print(" апустил категории")
+
+
+@dp.message_handler(commands=['budget'])
+async def budget(message: types.Message):
+    """Вывод текущего бюджета"""
+    total_budget = db.get_budget()
+    answer_message = f"Сейчас в норке: {total_budget} рублей"
+    await message.answer(answer_message)
 
 
 @dp.message_handler(commands=['today_expense'])
@@ -149,7 +161,7 @@ async def today_statistics(message: types.Message):
 
 @dp.message_handler(commands=['month_prof'])
 async def month_statistics(message: types.Message):
-    """Отправляет статистику трат текущего месяца"""
+    """Отправляет статистику пополнений текущего месяца"""
     answer_message = profits.get_month_statistics()
     await message.answer(answer_message)
 
@@ -163,9 +175,9 @@ async def list_expenses(message: types.Message):
         return
     last_profits_rows = [
         f"{profit.profit} руб. на {profit.category_name} — нажми "
-        f"/del{profit.id} для удаления"
+        f"/udalyl{profit.id} для удаления"
         for profit in last_profits]
-    answer_message = "Последние сохранённые траты:\n\n* " + "\n\n* " \
+    answer_message = "Последние сохранённые прибыли:\n\n* " + "\n\n* " \
         .join(last_profits_rows)
     await message.answer(answer_message)
 
@@ -173,29 +185,42 @@ async def list_expenses(message: types.Message):
 @dp.message_handler()
 async def add_doing(message: types.Message):
     """Добавляет новый расход/доход"""
-    view = message.text
-    if view[-1::] == "-":
-        try:
-            expense = expenses.add_expense(message.text)
-        except exceptions.NotCorrectMessage as e:
-            await message.answer(str(e))
-            return
-        answer_message = (
-            f"Добавлены траты {expense.amount} руб на {expense.category_name}.\n\n"
-            f"{expenses.get_today_statistics()}")
-        await message.answer(answer_message)
-    else:
-        try:
-            profit = profits.add_profit(message.text)
-        except exceptions.NotCorrectMessage as e:
-            await message.answer(str(e))
-            return
-        answer_message = (
-            f"Добавлены прибыль {profit.profit} руб на {profit.category_name}.\n\n"
-            f"{profits.get_today_statistics()}")
-        await message.answer(answer_message)
-    print("Запустил add_expense!")
-
+    full_message = re.match(r"([\d ]+) (.*)", message.text)
+    try:
+        message_category = full_message.group(2).strip().lower()
+        if int(full_message.group(1).replace(" ", "")) != 0:
+            if message_category in list_expense:
+                try:
+                    expense = expenses.add_expense(message.text)
+                    min_expense = db.minus_expense(int(full_message.group(1).replace(" ", "")))
+                except exceptions.NotCorrectMessage as e:
+                    await message.answer(str(e))
+                    return
+                answer_message = (
+                    f"Добавлены траты {expense.amount} руб на {expense.category_name}.\n\n"
+                    f"{expenses.get_today_statistics()}")
+                await message.answer(answer_message)
+            else:
+                try:
+                    profit = profits.add_profit(message.text)
+                    add_profit = db.add_profit(int(full_message.group(1).replace(" ", "")))
+                except exceptions.NotCorrectMessage as e:
+                    await message.answer(str(e))
+                    return
+                answer_message = (
+                    f"Добавлены прибыль {profit.profit} руб.\n\n"
+                    f"{profits.get_today_statistics()}")
+                await message.answer(answer_message)
+        else:
+            await message.answer("Совсем не так!\n"
+                                 "Сначала число, потом категория\n"
+                                 "К примеру: 500 коты\n\n"
+                                 "С уважением, твой Хомяк.")
+    except AttributeError:
+        await message.answer("Совсем не так!\n"
+                             "Сначала число, потом категория\n"
+                             "К примеру: 500 коты\n\n"
+                             "С уважением, твой Хомяк.")
 
 
 if __name__ == '__main__':
