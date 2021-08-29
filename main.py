@@ -45,45 +45,6 @@ async def send_welcome(message: types.Message, name='', name1=""):
         reply_markup=bm.main_menu1)
 
 
-class MainMenu:
-    """Логика главного меню"""
-
-    def __init__(self, name_table, name_category, rus_name, rus_names, today, month):
-        self.name_table = name_table
-        self.name_category = name_category
-        self.rus_name = rus_name
-        self.rus_names = rus_names
-        self.today = today
-        self.month = month
-
-    def send_message(self):
-        """Формирет ворую ветку меню"""
-        message_menu = (
-            f"добавить {self.rus_name}: /{self.name_table}\n"
-            f"Сегодняшняя статистика : /{self.today}\n"
-            f"Статистика за месяц: /{self.month}\n"
-            f"Последние внесённые {self.rus_names}: /{self.name_category}\n"
-            "Категории: /categories\n"
-            "Бюджет: /budget\n"
-        )
-        return message_menu
-
-
-Main_minus = MainMenu("expense", "expenses", "расход", "расходы", 'today_expense', "month_exp")
-
-Main_plus = MainMenu("profit", "profits", "доход", "доходы", 'today_profit', "month_prof")
-
-
-@dp.message_handler(commands=['minus'])
-async def get_plus_message(message: types.Message):
-    await message.answer(Main_minus.send_message())
-
-
-@dp.message_handler(commands=['plus'])
-async def get_main_menu(message: types.Message):
-    await message.answer(Main_plus.send_message())
-
-
 @dp.message_handler(lambda message: message.text.startswith('/udalyl'))
 async def del_profit(message: types.Message):
     """Удаляет одну запись о доходе по её индентификатору"""
