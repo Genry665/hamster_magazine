@@ -24,7 +24,7 @@ menu_minus = ReplyKeyboardMarkup(resize_keyboard=True).add(button_today_expense,
 
 # Доходы за сегодня
 button_today_profit = KeyboardButton("Сегодня заработали")
-button_month_prof = KeyboardButton("Заработи за месяц")
+button_month_prof = KeyboardButton("Заработки за месяц")
 button_profits = KeyboardButton("Последние поступления")
 
 menu_plus = ReplyKeyboardMarkup(resize_keyboard=True).add(button_today_profit,
