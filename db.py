@@ -3,7 +3,6 @@ import sqlite3
 
 from typing import Dict, List, Tuple
 
-
 conn = sqlite3.connect(os.path.join("db", "test.db"))
 cursor = conn.cursor()
 

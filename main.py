@@ -45,45 +45,6 @@ async def send_welcome(message: types.Message, name='', name1=""):
         reply_markup=bm.main_menu1)
 
 
-class MainMenu:
-    """Логика главного меню"""
-
-    def __init__(self, name_table, name_category, rus_name, rus_names, today, month):
-        self.name_table = name_table
-        self.name_category = name_category
-        self.rus_name = rus_name
-        self.rus_names = rus_names
-        self.today = today
-        self.month = month
-
-    def send_message(self):
-        """Формирет ворую ветку меню"""
-        message_menu = (
-            f"добавить {self.rus_name}: /{self.name_table}\n"
-            f"Сегодняшняя статистика : /{self.today}\n"
-            f"Статистика за месяц: /{self.month}\n"
-            f"Последние внесённые {self.rus_names}: /{self.name_category}\n"
-            "Категории: /categories\n"
-            "Бюджет: /budget\n"
-        )
-        return message_menu
-
-
-Main_minus = MainMenu("expense", "expenses", "расход", "расходы", 'today_expense', "month_exp")
-
-Main_plus = MainMenu("profit", "profits", "доход", "доходы", 'today_profit', "month_prof")
-
-
-@dp.message_handler(commands=['minus'])
-async def get_plus_message(message: types.Message):
-    await message.answer(Main_minus.send_message())
-
-
-@dp.message_handler(commands=['plus'])
-async def get_main_menu(message: types.Message):
-    await message.answer(Main_plus.send_message())
-
-
 @dp.message_handler(lambda message: message.text.startswith('/udalyl'))
 async def del_profit(message: types.Message):
     """Удаляет одну запись о доходе по её индентификатору"""
@@ -105,11 +66,10 @@ async def del_expense(message: types.Message):
 def categories_list():
     """Отправляет список категорий расходов"""
     categories = Categories().get_all_categories()
-    answer_message = "-------------------------------------------------\n"\
+    answer_message = "-------------------------------------------------\n" \
                      "Категории для ввода:\n\n* " + \
                      ("\n* ".join([c.name + ' (' + ", ".join(c.aliases) + ')' for c in categories])) + \
                      "\n-------------------------------------------------\n"
-    print(type(answer_message))
     return answer_message
 
 
@@ -119,6 +79,7 @@ def budget():
     answer_message = "-------------------------------------------------\n" \
                      f"Сейчас в норке: {total_budget} рублей\n" \
                      "-------------------------------------------------"
+    print(total_budget, type(total_budget), "fun")
     return answer_message
 
 
@@ -145,9 +106,9 @@ def list_expenses():
         f"{expense.amount} руб. на {expense.category_name} — нажми "
         f"/del{expense.id} для удаления"
         for expense in last_expenses]
-    answer_message = "-------------------------------------------------\n"\
+    answer_message = "-------------------------------------------------\n" \
                      "Последние сохранённые траты:\n\n* " + "\n\n* " \
-        .join(last_expenses_rows)
+                         .join(last_expenses_rows)
     return answer_message
 
 
@@ -178,44 +139,43 @@ def list_profits():
     return answer_message
 
 
+raw_message = {
+    'Бюджет': budget,
+    'Сегодня потратили': today_expenses,
+    'Категории': categories_list,
+    'Потратили за мясяц': month_expenses,
+    'Последние траты': list_expenses,
+    'Сегодня заработали': today_profit,
+    'Заработки за месяц': month_profits,
+    'Последние поступления': list_profits,
+}
+
+
 @dp.message_handler()
 async def add_doing(message: types.Message):
     """Добавляет новый расход/доход"""
+
+    for text in raw_message:
+        if message.text == text:
+            answer = raw_message[text]()
+            await message.answer(answer)
+            return
+
     if message.text == "Главное меню":
         await bot.send_message(message.from_user.id, "Главное меню", reply_markup=bm.main_menu1)
-    elif message.text == "Бюджет":
-        answer = budget()
-        await message.answer(answer)
-    elif message.text == 'Сегодня потратили':
-        answer = today_expenses()
-        await message.answer(answer)
+
     elif message.text == "Прибыль":
         await bot.send_message(message.from_user.id, 'Прибыль', reply_markup=bm.menu_plus)
+
     elif message.text == "Расход":
         await bot.send_message(message.from_user.id, 'Расход', reply_markup=bm.menu_minus)
-    elif message.text == "Категории":
-        answer = categories_list()
-        await message.answer(answer)
-    elif message.text == "Потратили за мясяц":
-        answer = month_expenses()
-        await message.answer(answer)
-    elif message.text == 'Последние траты':
-        answer = list_expenses()
-        await message.answer(answer)
-    elif message.text == 'Сегодня заработали':
-        answer = today_profit()
-        await message.answer(answer)
-    elif message.text == 'Заработи за месяц':
-        answer = month_profits()
-        await message.answer(answer)
-    elif message.text == 'Последние поступления':
-        answer = list_profits()
-        await message.answer(answer)
+
     else:
         full_message = re.match(r"([\d ]+) (.*)", message.text)
         try:
             message_category = full_message.group(2).strip().lower()
             if int(full_message.group(1).replace(" ", "")) != 0:
+
                 if message_category in list_expense:
                     try:
                         expense = expenses.add_expense(message.text)
@@ -227,6 +187,7 @@ async def add_doing(message: types.Message):
                         f"Добавлены траты {expense.amount} руб на {expense.category_name}.\n\n"
                         f"{expenses.get_today_statistics()}")
                     await message.answer(answer_message)
+
                 else:
                     try:
                         profit = profits.add_profit(message.text)
@@ -240,7 +201,7 @@ async def add_doing(message: types.Message):
                     await message.answer(answer_message)
             else:
                 await message.answer("Совсем не так!\n"
-                                     "За чем тебе этот ноль!\n"
+                                     "Зачем тебе этот ноль!\n"
                                      "Пиши к примеру: 500 коты\n\n"
                                      "С уважением, твой Хомяк.")
         except AttributeError:
@@ -250,9 +211,5 @@ async def add_doing(message: types.Message):
                                  "С уважением, твой Хомяк.")
 
 
-# if __name__ == "__main__":
-#     budget()
-#     today_statistics()
-#
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=True)

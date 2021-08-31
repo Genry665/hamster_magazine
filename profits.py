@@ -46,7 +46,7 @@ def get_today_statistics() -> str:
     result = cursor.fetchone()
     if not result[0]:
         return "-------------------------------------------------\n"\
-               "Что-тосегодня пока глухо...\n"\
+               "Что-то сегодня пока глухо...\n"\
                "-------------------------------------------------\n"
     all_today_profits = result[0]
     cursor.execute("select sum(profit) "
@@ -81,7 +81,7 @@ def get_month_statistics() -> str:
     result = cursor.fetchone()
     base_today_profit = result[0] if result[0] else 0
     return ("-------------------------------------------------\n"
-            f"За этот месяц вы принесли в норку: {db.get_budget()} руб.\n"
+            f"За этот месяц вы принесли в норку: {result} руб.\n"
             "-------------------------------------------------\n")
 
 
